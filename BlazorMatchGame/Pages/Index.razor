@@ -1,0 +1,379 @@
+﻿@page "/"
+@using System.Timers;
+@using System.Linq;
+
+<style>
+    .container {
+        width: 600px;
+    }
+
+    button {
+        width: 100%;
+        height: 100%;
+    }
+
+    .btn-highlight {
+        color: #fff;
+        background-color: #212529;
+        border-color: #212529
+    }
+
+    .btn-back {
+        background-color: #3e0e86;
+    }
+
+    .btn-disable {
+        width: 100%;
+        height: 100%;
+        border-radius: 0.25rem;
+        border: 1px solid transparent;
+        display: inline-block;
+        vertical-align: middle;
+        color: #fff;
+        background-color: #0c6f63;
+        border-color: #212529
+    }
+
+    .flip {
+        transition: transform 0.5s, background-color 1s;
+    }
+
+    .flip-back {
+        transform: rotate3d(0,1,0,180deg);
+    }
+</style>
+
+@if (mainMenu)
+{
+    <div style="margin: auto; text-align: center; ">
+        <h1> Matching Game </h1>
+    </div>
+    <div style="margin: auto; text-align: center; ">
+        <h2 style="color:red"> Choose Difficulty Level </h2>
+    </div>
+    <div class="row" style="overflow:visible;height: 400px ;margin:auto">
+
+        <div class="row btn-group" role="group" style="height: 33%">
+            @foreach (int buttonNumber in Enumerable.Range(0, 3))
+            {
+                string valueToDisplay = difficultyText[buttonNumber];
+                <button type="button" class="btn btn-secondary" @onclick="() => ChooseLevel(buttonNumber)">
+                    @valueToDisplay
+                </button>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="container">
+        <div class="row">
+            <h2>Time: @timeDisplay</h2>
+        </div>
+        <div style="padding: 0 0 0 0; display: block; flex-wrap: wrap; width: 560px">
+            @for (var elementNumber = 0; elementNumber < matchElements.Count; elementNumber++)
+            {
+                var element = matchElements[elementNumber];
+                <div style="@btnStyle" class="flip @(element.hidden ? "flip-back" : "")">
+                    @if (element.matched == false)
+                    {
+                        <button @onclick="@(() => ButtonClick(element))"
+                                type="button" class="btn btn-outline-dark
+                                @(element.selected ? "btn-highlight" : "")
+                                @(element.hidden ? "btn-back" : "")
+                                ">
+                            <p style="font-size: 42px;margin: 0 0 0 0" hidden="@element.hidden">@element.name</p>
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="btn-disable">
+
+                        </div>
+                    }
+
+                </div>
+            }
+
+        </div>
+        <div class="row">
+            <h2>Matches found: @matchesFound</h2>
+        </div>
+
+    </div>
+}
+
+<div class="">
+    <div class="row">
+        <h3> Records:</h3>
+    </div>
+    @for (int number = 0; number < records.Count; number++)
+    {
+        int time = records[number].tenthsOfSecondElapsed;
+        int level = records[number].level;
+        <div class="row">
+            <p>
+                @(number+1). @((time / 10f).ToString("0.0s")) @difficultyText[level]
+            </p>
+        </div>
+    }
+</div>
+
+
+@code{
+
+    // create a class for matching game elements
+    private class MatchElement
+    {
+        public string name { get; set; }
+        public int id { get; set; }
+        public bool hidden { get; set; }
+        public bool selected { get; set; }
+        public bool matched { get; set; }
+
+        //contructor
+        public MatchElement(string name, int id)
+        {
+            this.name = name;
+            this.id = id;
+            this.hidden = false;
+            this.selected = false;
+            this.matched = false;
+        }
+
+        public void Match()
+        {
+            matched = true;
+            selected = false;
+            hidden = true;
+        }
+
+        public void UnSelect()
+        {
+            selected = false;
+            hidden = true;
+        }
+
+        public void Select()
+        {
+            selected = true;
+            hidden = false;
+        }
+
+    }
+
+    private class Record
+    {
+        public int tenthsOfSecondElapsed { get; set; }
+        public int level { get; set; }
+        public Record(int time, int level)
+        {
+            this.tenthsOfSecondElapsed = time;
+            this.level = level;
+        }
+    }
+    List<String> difficultyText = new List<string>(){
+        "NORMAL",
+        "HARD",
+        "👹CRAZY👹"
+    };
+    List<String> emoji = new List<string>(){
+        // 6 * 36 emoji list
+        "🤡", "👹", "🎃", "👻", "🤢", "🤖",
+        "👾", "🥵", "👁", "😈", "🌝", "🦷",
+        "🌈", "🩸", "🍎", "🦴", "🪢", "💼",
+        "👩‍🎤", "🧳", "🌂", "☂️", "🧵", "🪡",
+        "🧶", "👓", "🕶", "🥽", "🥼", "🦺",
+        "👔", "👕", "👖", "🧣", "🧤", "🧥",
+        "🧦", "👗", "👘", "🥻", "🩴", "🩱",
+        "🩲", "🩳", "👙", "👚", "👛", "👜",
+        "👝", "🎒", "👞", "👟", "🥾", "🥿",
+        "👠", "👡", "🩰", "👢", "👑", "👒",
+        "🎩", "🎓", "🧢", "🪖", "💄", "💍",
+        "🐶", "🐱", "🐭", "🐹", "🐰", "🦊",
+        "🐻", "🐼", "🐻‍❄️", "🐨", "🐯", "🦁",
+        "🐮", "🐷", "🐽", "🐸", "🐵", "🙈",
+        "🙉", "🙊", "🐒", "🐔", "🐧", "🐦",
+        "🐤", "🐣", "🐥", "🦆", "🦅", "🦉",
+        "🦇", "🐺", "🐗", "🐴", "🦄", "🐝",
+        "🪱", "🐛", "🦋", "🐌", "🐞", "🐜",
+        "🪰", "🪲", "🪳", "🦟", "🦗", "🕷",
+        "🕸", "🦂", "🐢", "🐍", "🦎", "🦖",
+        "🦕", "🐙", "🦑", "🦐", "🦞", "🦀",
+        "🪸", "🐡", "🐠", "🐟", "🐬", "🐳",
+        "🐋", "🦈", "🐊", "🐅", "🐆", "🦓",
+        "🦍", "🦧", "🦣", "🐘", "🦛", "🦏",
+        "🐪", "🐫", "🦒", "🦘", "🦬", "🐃",
+        "🐂", "🐄", "🐎", "🐖", "🐏", "🐑",
+        "🦙", "🐐", "🦌", "🐕", "🐩", "🦮",
+        "🐕‍🦺", "🐈", "🐈‍⬛", "🪶", "🐓", "🦃",
+        "🦤", "🦚", "🦜", "🦢", "🦩", "🕊",
+        "🐇", "🦝", "🦨", "🦡", "🦫", "🦦",
+        "🦥", "🐁", "🐀", "🐿", "🦔", "🐾",
+        "🐉", "🐲", "🌵", "🎄", "🌲", "🌳",
+        "🌴", "🪺", "🪵", "🌱", "🌿", "☘️",
+        "🍏", "🍎", "🍐", "🍊", "🍋", "🍌",
+        "🍉", "🍇", "🍓", "🫐", "🍈", "🍒",
+        "🍑", "🥭", "🍍", "🥥", "🥝", "🍅",
+        "🍆", "🥑", "🥦", "🥬", "🥒", "🌶"
+    };
+
+    List<MatchElement> matchElements;
+    List<Record> records;
+    int matchesFound = 0;
+    Timer timer;
+    int tenthsOfSecondElapsed = 0;
+    string timeDisplay = "0";
+    string btnStyle = "width: 100px;height: 100px;";
+    bool mainMenu = true;
+    bool gameStart = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        timer = new Timer(100);
+        timer.Elapsed += Timer_Tick;
+
+        records = new List<Record>();
+        records.Add(new Record(40000, 1));
+    }
+    private void ChooseLevel(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                num = 4;
+                break;
+            case 1:
+                num = 6;
+                break;
+            case 2:
+                num = 8;
+                break;
+        }
+        _ = SetUpGame();
+    }
+    int num = 8;
+    private async Task SetUpGame()
+    {
+        gameStart = false;
+        mainMenu = false;
+        matchElements = GetMatchElements(num * num, emoji);
+        btnStyle = $"width: {560 / num}px;height: {560 / num}px; display: inline-block;";
+        matchesFound = 0;
+        tenthsOfSecondElapsed = 0;
+
+        for (int t = 5 + (num - 4) * 5; t >= 0; t--)
+        {
+            await Task.Delay(1000);
+            timeDisplay = $"{t} -- Memorize these Emoji !!!";
+            await InvokeAsync(StateHasChanged);
+        }
+
+
+
+        matchElements.ForEach(item => item.hidden = true);
+        await InvokeAsync(StateHasChanged);
+        gameStart = true;
+    }
+
+    List<MatchElement> GetMatchElements(int number, List<string> EmojiCollection)
+    {
+        //creat new MatchElement list
+        List<MatchElement> list = new List<MatchElement>();
+        // shuffle the emoji list
+        Shuffle(ref EmojiCollection);
+        // create MatchElement , each generates twice
+        for (int i = 0; i < number / 2; i++)
+        {
+            list.Add(new MatchElement(EmojiCollection[i], i));
+            list.Add(new MatchElement(EmojiCollection[i], i + number));
+        }
+        // shuffle the MatchElement list
+        Shuffle(ref list);
+        return list;
+    }
+
+    // nullable type
+    MatchElement? lastElementFound = null;
+    bool LOCK = false;
+
+    private async Task ButtonClick(MatchElement value)
+    {
+        if (value.matched == true || value.selected == true || gameStart == false || LOCK == true)
+        {
+            // return if the element already got matched
+            // return if the element has been selected;
+            // return if thre game does not start
+
+            return;
+        }
+
+        LOCK = true;
+
+        if (lastElementFound == null)
+        {
+            lastElementFound = value;
+            lastElementFound.selected = true;
+            lastElementFound.hidden = false;
+            if (timer.Enabled == false)
+            {
+                timer.Start();
+            }
+
+        }
+        else if (lastElementFound.name == value?.name && lastElementFound != value)
+        {
+            // mathched
+            value.Select();
+            await Task.Delay(1000);
+            lastElementFound.Match();
+            value.Match();
+            lastElementFound = null;
+            matchesFound++;
+            if (matchesFound == num * num / 2)
+            {
+                timer.Stop();
+                mainMenu = true;
+
+                records.Add(new Record(tenthsOfSecondElapsed, (num - 4) / 2));
+            }
+
+        }
+        else
+        {
+            //dismatch
+            value.Select();
+            await Task.Delay(1000);
+            lastElementFound.UnSelect();
+            lastElementFound = null;
+            value.UnSelect();
+        }
+
+        LOCK = false;
+    }
+
+    private void Timer_Tick(Object source, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            tenthsOfSecondElapsed++;
+            timeDisplay = (tenthsOfSecondElapsed / 10f)
+                .ToString("0.0s");
+            StateHasChanged();
+        }
+            );
+    }
+
+    // create a shuffle helper
+
+    public static void Shuffle<T>(ref List<T> list)
+    {
+        Random random = new Random();
+
+        list = list
+           .OrderBy(item => random.Next())
+           .ToList();
+    }
+
+
+}
