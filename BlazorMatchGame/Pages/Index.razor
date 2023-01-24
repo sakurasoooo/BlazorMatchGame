@@ -51,9 +51,9 @@
     <div style="margin: auto; text-align: center; ">
         <h2 style="color:red"> Choose Difficulty Level </h2>
     </div>
-    <div class="row" style="overflow:visible;height: 400px ;margin:auto">
+    <div class="row" style="overflow:visible;width:max-content;height: 400px ;margin:auto">
 
-        <div class="row btn-group" role="group" style="height: 33%">
+        <div class="col btn" role="group" style="height: 33%">
             @foreach (int buttonNumber in Enumerable.Range(0, 3))
             {
                 string valueToDisplay = difficultyText[buttonNumber];
@@ -97,26 +97,41 @@ else
 
         </div>
         <div class="row">
-            <h2>Matches found: @matchesFound</h2>
+            <h2>Matches Remaing: @(num * num / 2 - matchesFound)</h2>
         </div>
 
     </div>
 }
 
-<div class="">
+<div class="container">
     <div class="row">
         <h3> Records:</h3>
     </div>
-    @for (int number = 0; number < records.Count; number++)
-    {
-        int time = records[number].tenthsOfSecondElapsed;
-        int level = records[number].level;
-        <div class="row">
-            <p>
-                @(number+1). @((time / 10f).ToString("0.0s")) @difficultyText[level]
-            </p>
-        </div>
-    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Time</th>
+                <th scope="col">Difficulty</th>
+                <th scope="col">Click times</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int number = 0; number < records.Count; number++)
+            {
+                int time = records[number].tenthsOfSecondElapsed;
+                int level = records[number].level;
+                int clicks = records[number].clicks;
+                <tr>
+                    <th scope="row">@(number + 1)</th>
+                    <td>@((time / 10f).ToString("0.0s"))</td>
+                    <td>@difficultyText[level]</td>
+                    <td>@clicks</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
 
@@ -166,10 +181,12 @@ else
     {
         public int tenthsOfSecondElapsed { get; set; }
         public int level { get; set; }
-        public Record(int time, int level)
+        public int clicks { get; set; }
+        public Record(int time, int level, int clicks)
         {
             this.tenthsOfSecondElapsed = time;
             this.level = level;
+            this.clicks = clicks;
         }
     }
     List<String> difficultyText = new List<string>(){
@@ -223,6 +240,7 @@ else
     int matchesFound = 0;
     Timer timer;
     int tenthsOfSecondElapsed = 0;
+    int elementClicks = 0;
     string timeDisplay = "0";
     string btnStyle = "width: 100px;height: 100px;";
     bool mainMenu = true;
@@ -234,7 +252,7 @@ else
         timer.Elapsed += Timer_Tick;
 
         records = new List<Record>();
-        records.Add(new Record(40000, 1));
+        records.Add(new Record(40000, 1, 114514));
     }
     private void ChooseLevel(int index)
     {
@@ -261,6 +279,7 @@ else
         btnStyle = $"width: {560 / num}px;height: {560 / num}px; display: inline-block;";
         matchesFound = 0;
         tenthsOfSecondElapsed = 0;
+        elementClicks = 0;
 
         for (int t = 5 + (num - 4) * 5; t >= 0; t--)
         {
@@ -304,11 +323,17 @@ else
             // return if the element already got matched
             // return if the element has been selected;
             // return if thre game does not start
+            // return if the trasition is playing (locked)
 
             return;
         }
 
+        // lock the the game board to wait animation end
         LOCK = true;
+
+        // if the mouse click is valid, increase the counter by 1
+        elementClicks++;
+
 
         if (lastElementFound == null)
         {
@@ -324,6 +349,8 @@ else
         else if (lastElementFound.name == value?.name && lastElementFound != value)
         {
             // mathched
+
+
             value.Select();
             await Task.Delay(1000);
             lastElementFound.Match();
@@ -335,7 +362,9 @@ else
                 timer.Stop();
                 mainMenu = true;
 
-                records.Add(new Record(tenthsOfSecondElapsed, (num - 4) / 2));
+                records.Add(new Record(tenthsOfSecondElapsed,
+                    (num - 4) / 2, // difffcitulty to index
+                    elementClicks));
             }
 
         }
@@ -348,7 +377,7 @@ else
             lastElementFound = null;
             value.UnSelect();
         }
-
+        // unlock the the game board , continue the game
         LOCK = false;
     }
 
