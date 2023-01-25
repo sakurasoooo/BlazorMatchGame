@@ -2,26 +2,30 @@
 @using System.Timers;
 @using System.Linq;
 
+@*addtional css to help trasition and extra layouts*@
 <style>
+    @* resize the borad size from 400px to 600px *@
     .container {
         width: 600px;
     }
-
+    @*buttons are expected to expand with <div> blocks*@
     button {
         width: 100%;
         height: 100%;
     }
-
+    @*it is same with the btn-outline-dark:hover, help control the highlight of buttons manually*@
     .btn-highlight {
         color: #fff;
         background-color: #212529;
         border-color: #212529
     }
 
+@*Color of the back of the match element*@
     .btn-back {
         background-color: #3e0e86;
     }
 
+@*alternative color the buttons, used to indicate the element has been matched*@
     .btn-disable {
         width: 100%;
         height: 100%;
@@ -33,27 +37,43 @@
         background-color: #0c6f63;
         border-color: #212529
     }
-
+@*enable the transform trastion of match elemetns, each block rotates in 1 seconds*@
     .flip {
         transition: transform 0.5s, background-color 1s;
     }
-
+@* apply the transform, add this class to make the block rotate 180 degrees along the Y-axis (in 1 seconds) *@
     .flip-back {
         transform: rotate3d(0,1,0,180deg);
     }
 </style>
 
+@*
+    Use if statement to switch between the Main Menu and Match game scene
+
+    if(bool)
+        Show Main Menu
+    else
+        Show Game
+*@
+
 @if (mainMenu)
 {
+    @*
+        Game title here
+        extra style to help align the elements to the vertical center.
+    *@
     <div style="margin: auto; text-align: center; ">
         <h1> Matching Game </h1>
     </div>
+    @* Game Instructions *@
     <div style="margin: auto; text-align: center; ">
         <h2 style="color:red"> Choose Difficulty Level </h2>
     </div>
+    @* extra style to control the size buttons, Not Optimized *@
     <div class="row" style="overflow:visible;width:max-content;height: 400px ;margin:auto">
-
+        @* extra style to limited the height of buttons, Not Optimized *@
         <div class="col btn" role="group" style="height: 33%">
+            @* Render Three buttons to choose the difficulty*@
             @foreach (int buttonNumber in Enumerable.Range(0, 3))
             {
                 string valueToDisplay = difficultyText[buttonNumber];
@@ -66,27 +86,56 @@
 }
 else
 {
+    @*
+        Game Board
+    *@
     <div class="container">
+        @*Show countdown and game timer*@
         <div class="row">
             <h2>Time: @timeDisplay</h2>
         </div>
+
+        @*style to wrap the match element blocks*@
         <div style="padding: 0 0 0 0; display: block; flex-wrap: wrap; width: 560px">
             @for (var elementNumber = 0; elementNumber < matchElements.Count; elementNumber++)
             {
-                var element = matchElements[elementNumber];
+                var element = matchElements[elementNumber]; // neccessary for For(;;) loop
+
+                @*
+                    use "btnStyle" to control the size of match elements
+                        ternary operator to replace the if statement
+                        apply the "flip-back" to enable/disable the flip with transition
+                *@
                 <div style="@btnStyle" class="flip @(element.hidden ? "flip-back" : "")">
+                    @*
+                        if elements are matched, remove the buttons and show blocks with specific color
+                    *@
                     @if (element.matched == false)
                     {
+                        @*
+                            By default, "btn-outline-dark" let the button highlighted as black when mouse is hovering
+                            "btn-highlight" makes the the button always highlighted as black
+                            "btn-back" changes the button color from black to green
+
+                            If the button is selected by the player, "btn-highlight" will be set
+                            If the button got matched, element.hidden will be set
+                        *@
                         <button @onclick="@(() => ButtonClick(element))"
                                 type="button" class="btn btn-outline-dark
                                 @(element.selected ? "btn-highlight" : "")
                                 @(element.hidden ? "btn-back" : "")
                                 ">
+                            @*
+                                extra style to center align Emoji
+                            *@
                             <p style="font-size: 42px;margin: 0 0 0 0" hidden="@element.hidden">@element.name</p>
                         </button>
                     }
                     else
                     {
+                        @*
+                            uninteractive button
+                        *@
                         <div class="btn-disable">
 
                         </div>
@@ -96,13 +145,21 @@ else
             }
 
         </div>
+        @*
+            Show the remaining match elements, calculated in pairs
+        *@
         <div class="row">
-            <h2>Matches Remaing: @(num * num / 2 - matchesFound)</h2>
+            <h2>Matches Remaining: @(num * num / 2 - matchesFound)</h2>
         </div>
 
     </div>
 }
+@*
+    Show the Record table
 
+    Index | playtime | difficulty | click times
+          |          |            |
+*@
 <div class="container">
     <div class="row">
         <h3> Records:</h3>
@@ -149,13 +206,13 @@ else
         //contructor
         public MatchElement(string name, int id)
         {
-            this.name = name;
-            this.id = id;
-            this.hidden = false;
-            this.selected = false;
-            this.matched = false;
+            this.name = name; // emoji
+            this.id = id; // Unused, unique id to compare elements
+            this.hidden = false; // hidden flag
+            this.selected = false; // select flag
+            this.matched = false; // match flag
         }
-
+        // set flags to Match status, use it when player found a pair of emoji block
         public void Match()
         {
             matched = true;
@@ -163,12 +220,13 @@ else
             hidden = true;
         }
 
+        // set flags to Unselected status, use it to show the BACK of the block
         public void UnSelect()
         {
             selected = false;
             hidden = true;
         }
-
+        // set flags to selected status, use it to show the FRONT of the block
         public void Select()
         {
             selected = true;
@@ -176,12 +234,17 @@ else
         }
 
     }
-
+    // Class to record the result of playing
     private class Record
     {
+        // play time
         public int tenthsOfSecondElapsed { get; set; }
+        // difficulty
         public int level { get; set; }
+        // click times
         public int clicks { get; set; }
+
+        //constructor
         public Record(int time, int level, int clicks)
         {
             this.tenthsOfSecondElapsed = time;
@@ -189,11 +252,14 @@ else
             this.clicks = clicks;
         }
     }
+
+    // help convert the index of difficulty index to String, it better to be integrated into Record Class
     List<String> difficultyText = new List<string>(){
         "NORMAL",
         "HARD",
         "👹CRAZY👹"
     };
+    // a list of 100+ Emoji
     List<String> emoji = new List<string>(){
         // 6 * 36 emoji list
         "🤡", "👹", "🎃", "👻", "🤢", "🤖",
@@ -235,66 +301,104 @@ else
         "🍆", "🥑", "🥦", "🥬", "🥒", "🌶"
     };
 
+    //Store the grids of the game board, left to right, top to bottom
+    // num is the factor of difficulty. The length of this list is (num * num)
     List<MatchElement> matchElements;
+    //Store game records
     List<Record> records;
-    int matchesFound = 0;
+    //Global Timer
     Timer timer;
-    int tenthsOfSecondElapsed = 0;
-    int elementClicks = 0;
-    string timeDisplay = "0";
-    string btnStyle = "width: 100px;height: 100px;";
-    bool mainMenu = true;
-    bool gameStart = false;
 
+    //Matches found in a game
+    int matchesFound = 0;
+    //Record the elapsed time. 10 tenthsOfSecondElapsed = 1.0s
+    int tenthsOfSecondElapsed = 0;
+    //Records the number of cursor clicks. Only valid clicks will be recorded.
+    //Making the grid flip is a valid click.
+    int elementClicks = 0;
+    //Store the result of converting a time integer to a string.
+    string timeDisplay = "0";
+    //Store the style of the grid in order to modify the size of the grid.
+    string btnStyle = "width: 100px;height: 100px;";
+    //Flag to switch the title widget and game widget
+    bool mainMenu = true;
+    //Flag to lock the buttons until the count down ends
+    bool gameStart = false;
+    //call when first load the page
     protected override async Task OnInitializedAsync()
     {
+        // initialize the game timer, update per 0.1s
+        // callback will increase the tenthsOfSecondElapsed by 1 and update state
         timer = new Timer(100);
         timer.Elapsed += Timer_Tick;
 
+        // initialize the records
         records = new List<Record>();
+        // test record
         records.Add(new Record(40000, 1, 114514));
     }
+
+    @*
+        button callback
+        Convert Index to difficulty factor, then start the game
+    *@
     private void ChooseLevel(int index)
     {
         switch (index)
         {
-            case 0:
+            case 0: // normal
                 num = 4;
                 break;
-            case 1:
+            case 1: // hard
                 num = 6;
                 break;
-            case 2:
+            case 2: // crazy
                 num = 8;
                 break;
         }
-        _ = SetUpGame();
+        _ = SetUpGame(); // Start game
     }
+
+    // global variable for difficulty factor
     int num = 8;
+
+    @*
+        method to initilaize the game variables
+        changed to async for count down timer
+    *@
     private async Task SetUpGame()
     {
-        gameStart = false;
-        mainMenu = false;
-        matchElements = GetMatchElements(num * num, emoji);
-        btnStyle = $"width: {560 / num}px;height: {560 / num}px; display: inline-block;";
-        matchesFound = 0;
-        tenthsOfSecondElapsed = 0;
-        elementClicks = 0;
+        gameStart = false; // flag
+        mainMenu = false; // flag
 
+        //calculate the number of grids in the borad
+        matchElements = GetMatchElements(num * num, emoji);
+        //calculate the size of grids in the borad
+        btnStyle = $"width: {560 / num}px;height: {560 / num}px; display: inline-block;";
+
+        matchesFound = 0; // initialization
+        tenthsOfSecondElapsed = 0; // initialization
+        elementClicks = 0; // initialization
+
+        //Countdown timer, giving extra time according to the difficulty factor
         for (int t = 5 + (num - 4) * 5; t >= 0; t--)
         {
+            // wait 1 Second
             await Task.Delay(1000);
             timeDisplay = $"{t} -- Memorize these Emoji !!!";
+            // wait page refresh(state change), Therefore this countdown timer is not accurate, consider remove hte await
             await InvokeAsync(StateHasChanged);
         }
 
-
-
+        //Hide all emoji after the countdown is complete
         matchElements.ForEach(item => item.hidden = true);
+        //wait page refresh(state change). Call it manually, otherwise the emoji will not show up correctly as hidden
         await InvokeAsync(StateHasChanged);
+        // unlock the buttons
         gameStart = true;
     }
 
+    //Get random emojis, double them and then mess up the order.
     List<MatchElement> GetMatchElements(int number, List<string> EmojiCollection)
     {
         //creat new MatchElement list
@@ -314,95 +418,139 @@ else
 
     // nullable type
     MatchElement? lastElementFound = null;
+
+    // flag to help lock the buttons, same as the [gameStart] flag
+    // this flag is used to wait trasitions finished
     bool LOCK = false;
 
-    private async Task ButtonClick(MatchElement value)
+    // Callback for each button
+    // Core game system
+    @*
+        When a click is checked that is not valid, the function will return
+
+        if it is valid
+            - lock the buttons until flipping animation finished
+            - increase the clicking counter
+
+            if no element previous selected
+                -record current element and flip it to front
+            else if the element match the previous element
+                - set the two element to be matched
+                - clear the previous selection
+             else if the element doe NOT match the previous element
+                  - unselect both element
+                  - clear the previous selection
+    *@
+private async Task ButtonClick(MatchElement value)
+{
+    if (value.matched == true || value.selected == true || gameStart == false || LOCK == true)
     {
-        if (value.matched == true || value.selected == true || gameStart == false || LOCK == true)
-        {
-            // return if the element already got matched
-            // return if the element has been selected;
-            // return if thre game does not start
-            // return if the trasition is playing (locked)
+        // return if the element already got matched
+        // return if the element has been selected;
+        // return if thre game does not start
+        // return if the trasition is playing (locked)
 
-            return;
-        }
-
-        // lock the the game board to wait animation end
-        LOCK = true;
-
-        // if the mouse click is valid, increase the counter by 1
-        elementClicks++;
-
-
-        if (lastElementFound == null)
-        {
-            lastElementFound = value;
-            lastElementFound.selected = true;
-            lastElementFound.hidden = false;
-            if (timer.Enabled == false)
-            {
-                timer.Start();
-            }
-
-        }
-        else if (lastElementFound.name == value?.name && lastElementFound != value)
-        {
-            // mathched
-
-
-            value.Select();
-            await Task.Delay(1000);
-            lastElementFound.Match();
-            value.Match();
-            lastElementFound = null;
-            matchesFound++;
-            if (matchesFound == num * num / 2)
-            {
-                timer.Stop();
-                mainMenu = true;
-
-                records.Add(new Record(tenthsOfSecondElapsed,
-                    (num - 4) / 2, // difffcitulty to index
-                    elementClicks));
-            }
-
-        }
-        else
-        {
-            //dismatch
-            value.Select();
-            await Task.Delay(1000);
-            lastElementFound.UnSelect();
-            lastElementFound = null;
-            value.UnSelect();
-        }
-        // unlock the the game board , continue the game
-        LOCK = false;
+        return;
     }
 
-    private void Timer_Tick(Object source, ElapsedEventArgs e)
+    // lock the the game board to wait animation end
+    LOCK = true;
+
+    // if the mouse click is valid, increase the counter by 1
+    elementClicks++;
+
+    // no previous element selected
+    if (lastElementFound == null)
     {
-        InvokeAsync(() =>
+        // flip the element and store it to buffer
+        lastElementFound = value;
+        lastElementFound.selected = true;
+        lastElementFound.hidden = false;
+
+        // start the timer
+        if (timer.Enabled == false)
         {
-            tenthsOfSecondElapsed++;
-            timeDisplay = (tenthsOfSecondElapsed / 10f)
-                .ToString("0.0s");
-            StateHasChanged();
+            timer.Start();
         }
-            );
+
     }
 
-    // create a shuffle helper
-
-    public static void Shuffle<T>(ref List<T> list)
+    // the two elements mathched
+    else if (lastElementFound.name == value?.name && lastElementFound != value)
     {
-        Random random = new Random();
+        // set current element select flag
+        // show current element 1 second
+        value.Select();
+        // wait 1 second
+        await Task.Delay(1000);
+        // set previous element match flag and hide it
+        lastElementFound.Match();
+        // set current element match flag and hide it
+        value.Match();
+        // clear the buffer
+        lastElementFound = null;
+        // increase the matching counter
+        matchesFound++;
 
-        list = list
-           .OrderBy(item => random.Next())
-           .ToList();
+        // game win condition
+        if (matchesFound == num * num / 2)
+        {
+            //stop the timer
+            timer.Stop();
+            //show the title menu
+            mainMenu = true;
+            // save record
+            records.Add(new Record(tenthsOfSecondElapsed,
+                (num - 4) / 2, // difffcitulty to index
+                elementClicks));
+        }
+
     }
+    // the two elements do not mathch
+    else
+    {
+        // set current element select flag
+        // show current element 1 second
+        value.Select();
+        //wait 1 second
+        await Task.Delay(1000);
+        // set previous element unselect flag and hide it
+        lastElementFound.UnSelect();
+        //clear buffer
+        lastElementFound = null;
+        // set currrent element unselect flag and hide it
+        value.UnSelect();
+    }
+    // unlock the the game board , continue the game
+    LOCK = false;
+}
+
+//Callback for the timer
+private void Timer_Tick(Object source, ElapsedEventArgs e)
+{
+    InvokeAsync(() =>
+    {
+        // increase 0.1s
+        tenthsOfSecondElapsed++;
+        //convert to string
+        timeDisplay = (tenthsOfSecondElapsed / 10f)
+            .ToString("0.0s");
+        //nofity parents the state has changed
+        StateHasChanged();
+    }
+        );
+}
+
+// create a shuffle helper
+
+public static void Shuffle<T>(ref List<T> list)
+{
+    Random random = new Random();
+
+    list = list
+       .OrderBy(item => random.Next())
+       .ToList();
+}
 
 
 }
